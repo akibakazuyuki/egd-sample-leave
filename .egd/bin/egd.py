@@ -406,15 +406,30 @@ def cmd_coverage(args) -> int:
     return 0
 
 
-def red_check(root: Path, cfg: dict, cycle: str) -> tuple[bool, dict]:
+def changed_examples(root: Path, cycle: str) -> list[str] | None:
+    """Example ids that are new or changed against the committed contract.
+    None when there is no committed contract to compare with."""
+    path = rel(root, cycle_dir(root, cycle) / "contract.yaml")
+    try:
+        before = {e["id"]: e for e in parse_examples(git(root, "show", f"HEAD:{path}"))}
+    except EgdError:
+        return None
+    return [e["id"] for e in contract_examples(root, cycle) if before.get(e["id"]) != e]
+
+
+def red_check(root: Path, cfg: dict, cycle: str, only: list[str] | None = None) -> tuple[bool, dict]:
+    """Acceptance tests must fail before implementation. On a re-seal, `only` limits
+    the check to new or changed examples: the others are already implemented."""
     junit = root / EGD_DIR / "out" / f"{cycle}-red.xml"
     code = run_cmd(root, cfg["acceptance_cmd"], cycle, junit)
     results = parse_junit(junit)
     ids = [e["id"] for e in contract_examples(root, cycle)]
+    if only is not None:
+        ids = [i for i in ids if i in set(only)]
     passing = [i for i in ids if results.get(i) == "pass"]
     unseen = [i for i in ids if i not in results]
     ok = code != 0 and not passing and not unseen
-    return ok, {"exit_code": code, "passing_before_impl": passing, "not_run": unseen}
+    return ok, {"exit_code": code, "checked": ids, "passing_before_impl": passing, "not_run": unseen}
 
 
 def cmd_red_check(args) -> int:
@@ -437,13 +452,18 @@ def cmd_lock(args) -> int:
     cov = coverage(root, cfg, args.cycle)
     if cov["missing"] or not cov["examples"]:
         raise EgdError("coverage check failed; run `egd coverage` first")
-    red = None
-    if not args.skip_red:
-        ok, red = red_check(root, cfg, args.cycle)
-        if not ok:
-            raise EgdError(f"red check failed: {red}")
     lock_path = d / "contract.lock"
     prev = read_json(lock_path, None)
+    red = None
+    if not args.skip_red:
+        only = None
+        if prev and args.relock:
+            only = changed_examples(root, args.cycle)
+            if only == []:
+                raise EgdError("re-seal has no new or changed examples")
+        ok, red = red_check(root, cfg, args.cycle, only)
+        if not ok:
+            raise EgdError(f"red check failed: {red}")
     version = (prev["version"] + 1) if prev else 1
     if prev and not args.relock:
         raise EgdError("already sealed; re-sealing needs --reseal and must be done by a human")
