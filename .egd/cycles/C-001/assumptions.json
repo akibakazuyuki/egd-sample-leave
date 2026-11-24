@@ -1,1 +1,9 @@
-[]
+[
+  {"id": "AS-001", "decision": "土日・祝日だけの申請は不可（「休日だけの申請はできません」）", "reason": "契約に記載がない。0日の申請を受け付けても意味がないため", "by": "implementer", "examples": ["EX-009"], "type": "C", "reversible": true, "alternatives": ["0日として受け付ける"], "status": "pending"},
+  {"id": "AS-002", "decision": "半日を申請した日に、もう半日を申請することはできない（申請済みの日として扱う）", "reason": "契約は重なりを不可としているが、半日どうしの扱いは未定義", "by": "implementer", "examples": ["EX-003", "EX-005"], "type": "C", "reversible": true, "alternatives": ["午前・午後に分けて同じ日に2回まで可"], "status": "pending"},
+  {"id": "AS-003", "decision": "祝日データは内閣府公表の2026年・2027年分だけ。範囲外の日付は不可（「この期間の祝日情報がないため申請できません」）", "reason": "祝日は毎年公表されるため。誤った日数で受け付けるより止める方が安全", "by": "implementer", "examples": ["EX-010"], "type": "C", "reversible": true, "alternatives": ["範囲外は土日だけ除外して受け付ける"], "status": "pending"},
+  {"id": "AS-004", "decision": "Web画面に認証はなく、誰でも任意の従業員として申請できる（サンプル用）", "reason": "C-001の契約に本人確認・権限の要求がない。公開サンプルの動作確認用", "by": "implementer", "examples": [], "type": "C", "reversible": true, "alternatives": ["次サイクルでログインと本人以外の申請禁止を追加"], "status": "pending"},
+  {"id": "AS-005", "decision": "終了日が開始日より前なら不可（「終了日は開始日以降にしてください」）", "reason": "入力誤りの扱い", "by": "implementer", "examples": [], "type": "B", "reversible": true, "alternatives": [], "status": "pending"},
+  {"id": "AS-006", "decision": "期間指定で半日を選ぶと不可（「半日は1日だけの申請で使えます」）", "reason": "契約のルールに対する画面の文言", "by": "implementer", "examples": [], "type": "B", "reversible": true, "alternatives": [], "status": "pending"},
+  {"id": "AS-007", "decision": "申請データはメモリ上だけに保存し、サーバーを止めると消える", "reason": "サンプルのため。永続化は契約にない", "by": "implementer", "examples": [], "type": "B", "reversible": true, "alternatives": ["SQLiteに保存"], "status": "pending"}
+]
