@@ -1,6 +1,6 @@
 """最小のWeb画面（標準ライブラリのみ）。PYTHONPATH=src python3 -m leave.web で起動。"""
 import os
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from html import escape
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
@@ -9,8 +9,16 @@ from leave.service import LeaveError, LeaveService
 from leave.store import demo_store
 
 STORE = demo_store()
-TODAY = date.fromisoformat(os.environ["LEAVE_TODAY"]) if os.environ.get("LEAVE_TODAY") else date.today()
-SERVICE = LeaveService(STORE, today=TODAY)
+JST = timezone(timedelta(hours=9))
+
+
+def today() -> date:
+    """申請のたびに日本時間の今日を返す。LEAVE_TODAY はデモ・証拠取得用の固定値。"""
+    fixed = os.environ.get("LEAVE_TODAY")
+    return date.fromisoformat(fixed) if fixed else datetime.now(JST).date()
+
+
+SERVICE = LeaveService(STORE, today=today)
 
 
 def page(message: str = "", ok: bool = True) -> bytes:
@@ -24,7 +32,7 @@ def page(message: str = "", ok: bool = True) -> bytes:
             if message else "")
     html = f"""<!doctype html><meta charset=utf-8><title>有給休暇</title>
 <style>body{{font-family:sans-serif;margin:24px}}td,th{{padding:4px 10px}}</style>
-<h1>有給休暇の申請</h1><p>今日：{TODAY.isoformat()}</p>{note}
+<h1>有給休暇の申請</h1><p>今日：{SERVICE.today.isoformat()}</p>{note}
 <form method=post>
 従業員 <select name=emp>{options}</select>
 開始日 <input type=date name=start required>

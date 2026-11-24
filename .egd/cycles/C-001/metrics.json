@@ -9,6 +9,11 @@
       "event": "gate1_locked",
       "at": "2026-11-24T22:56:45+00:00",
       "version": 1
+    },
+    {
+      "event": "verified",
+      "at": "2026-11-24T22:58:12+00:00",
+      "ok": true
     }
   ]
 }

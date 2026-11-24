@@ -1,6 +1,6 @@
 """有給休暇の申請（C-001）。"""
 from datetime import date, timedelta
-from typing import Optional
+from typing import Callable, Optional, Union
 
 from leave.holidays import COVERED_YEARS, is_day_off
 
@@ -10,9 +10,10 @@ class LeaveError(Exception):
 
 
 class LeaveService:
-    def __init__(self, store, today: date):
+    def __init__(self, store, today: Union[date, Callable[[], date]]):
+        """today は固定の日付か、呼ぶたびに今日を返す関数。"""
         self.store = store
-        self.today = today
+        self._today = today
         self._applied = {}  # emp_id -> {date: amount}
 
     def apply(self, emp_id: str, start: date, end: Optional[date] = None, amount: float = 1.0):
@@ -48,6 +49,10 @@ class LeaveService:
             applied[d] = amount
         emp.balance -= total
         return total
+
+    @property
+    def today(self) -> date:
+        return self._today() if callable(self._today) else self._today
 
     def applied_dates(self, emp_id: str) -> set:
         return set(self._applied.get(emp_id, {}))

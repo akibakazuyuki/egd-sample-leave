@@ -1,0 +1,58 @@
+{
+  "cycle": "C-001",
+  "at": "2026-11-24T22:58:11+00:00",
+  "ref": "egd/C-001/v1",
+  "lock": {
+    "ok": true,
+    "version": 1,
+    "ref": "egd/C-001/v1",
+    "changed": [],
+    "missing": [],
+    "added": [],
+    "lock_file_changed": false
+  },
+  "boundary": {
+    "ok": true,
+    "changed": [
+      ".egd/cycles/C-001/assumptions.json",
+      ".egd/cycles/C-001/contract.lock",
+      ".egd/cycles/C-001/contract.yaml",
+      ".egd/cycles/C-001/evidence/EX-001_one-day.png",
+      ".egd/cycles/C-001/evidence/EX-002_no-balance.png",
+      ".egd/cycles/C-001/evidence/EX-010_holiday.png",
+      ".egd/cycles/C-001/metrics.json",
+      "src/leave/holidays.py",
+      "src/leave/service.py",
+      "src/leave/web.py",
+      "tests/acceptance/C-001/test_c001_apply.py",
+      "tests/unit/test_holidays.py",
+      "tests/unit/test_service_edges.py"
+    ],
+    "outside_boundary": [],
+    "protected_touched": []
+  },
+  "acceptance": {
+    "exit_code": 0,
+    "results": {
+      "EX-001": "pass",
+      "EX-002": "pass",
+      "EX-003": "pass",
+      "EX-004": "pass",
+      "EX-005": "pass",
+      "EX-006": "pass",
+      "EX-007": "pass",
+      "EX-008": "pass",
+      "EX-009": "pass",
+      "EX-010": "pass",
+      "EX-011": "pass"
+    },
+    "ok": true
+  },
+  "regression": {
+    "exit_code": 0,
+    "total": 8,
+    "failed": 0,
+    "ok": true
+  },
+  "ok": true
+}
