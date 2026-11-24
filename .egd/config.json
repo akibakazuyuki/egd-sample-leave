@@ -1,0 +1,16 @@
+{
+  "acceptance_dir": "tests/acceptance",
+  "acceptance_cmd": "python3 -m pytest tests/acceptance/{cycle} -q -p no:cacheprovider --junitxml={junit}",
+  "regression_cmd": "python3 -m pytest tests/unit -q -p no:cacheprovider --junitxml={junit}",
+  "change_boundary": [
+    "src/**",
+    "tests/unit/**"
+  ],
+  "protected": [
+    ".egd/config.json",
+    ".egd/project.yaml",
+    ".egd/bin/**",
+    ".github/workflows/egd-verify.yml",
+    "AGENTS.md"
+  ]
+}

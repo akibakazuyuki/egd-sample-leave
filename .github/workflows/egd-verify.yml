@@ -1,0 +1,68 @@
+# EGD independent verification (the judge).
+#
+# Runs on pull_request_target, so the workflow definition, egd.py and
+# .egd/config.json come from the BASE branch (main). The implementing agent's
+# branch cannot change how it is judged. Acceptance tests and the contract are
+# restored from the seal (tag egd/<ID>/v<N>, or branch egd-seal/<ID>/v<N>) before running.
+#
+# Security: pull_request_target runs the PR's code. This job gets no secrets and
+# read-only permissions. Do not add secrets to this workflow. Only use it on
+# repositories where PRs come from your own branches.
+name: egd-verify
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: startsWith(github.head_ref, 'egd/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout judge (base branch)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: judge
+          persist-credentials: false
+
+      - name: Checkout candidate (PR head)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: work
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Project-specific setup. Edit on main only (this file is protected).
+      - name: Install test dependencies
+        working-directory: work
+        run: |
+          python -m pip install --quiet pytest
+          if [ -f requirements.txt ]; then python -m pip install --quiet -r requirements.txt; fi
+
+      - name: Verify against the locked contract
+        working-directory: work
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git config user.name egd-judge
+          git config user.email egd-judge@localhost
+          python3 ../judge/.egd/bin/egd.py ci --branch "$HEAD_REF" --base-sha "$BASE_SHA" --config ../judge/.egd/config.json
+
+      - name: Upload verification result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egd-verify
+          path: work/.egd/out/

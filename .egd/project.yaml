@@ -1,0 +1,30 @@
+# EGD project defaults. Decided once by a human; each cycle may override in contract.yaml.
+# This file is protected: the implementing agent cannot change it.
+
+quality:                       # Quality Constraints
+  - 既存の回帰テストがすべて成功する
+  - 静的解析で重大な指摘がない
+
+decision_policy:               # Decision Policy
+  agent_may_decide:            # 記録不要（Type A）または出口で確認（Type B）
+    - 内部構成、関数分割、命名、内部アルゴリズム
+    - 可逆的なUI調整（並び順、表示形式）
+  must_ask_human:              # Type D：実行前に人間を呼ぶ
+    - データ削除
+    - 権限の緩和、認証・セキュリティ制約の変更
+    - 外部仕様（公開API）の変更
+    - 法令・取引契約に関わる判断
+  record_for_gate2:            # Type C：記録してGate 2で必ず確認
+    - 受入基準に書かれていない業務ルールの判断
+
+execution_budget:              # Execution Budget
+  max_hours: 4
+  max_repair_rounds: 5
+
+acceptance_policy:             # Acceptance Policy
+  - 必須の具体例がすべてPASS
+  - 不変条件のテストがPASS
+  - 回帰テストがPASS
+  - 保護対象とシールの改ざんがない
+  - 未承認のType Dの仮定がない
+  - 人間による最終承認（mainへのマージは人間が行う）
