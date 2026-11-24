@@ -194,7 +194,7 @@ def cycle_protected_paths(root: Path, cfg: dict, cycle: str) -> list[str]:
                         if p.is_file() and "__pycache__" not in p.parts)
     for pattern in cfg["protected"]:
         for p in sorted(root.glob(pattern)):
-            if p.is_file():
+            if p.is_file() and "__pycache__" not in p.parts:
                 files.append(rel(root, p))
     return sorted(set(files))
 
@@ -447,6 +447,9 @@ def cmd_lock(args) -> int:
     version = (prev["version"] + 1) if prev else 1
     if prev and not args.relock:
         raise EgdError("already locked; re-locking needs --relock and must be done by a human")
+    tag = f"egd/{args.cycle}/v{version}"
+    if args.git and git(root, "tag", "--list", tag, check=False).strip():
+        raise EgdError(f"tag {tag} already exists")
     files = {p: sha256_file(root / p) for p in cycle_protected_paths(root, cfg, args.cycle)}
     lock = {
         "cycle": args.cycle,
@@ -459,11 +462,19 @@ def cmd_lock(args) -> int:
     }
     write_json(lock_path, lock)
     record_event(root, args.cycle, "gate1_locked", version=version)
-    tag = f"egd/{args.cycle}/v{version}"
     if args.git:
         paths = [rel(root, lock_path), *files.keys()]
-        git(root, "add", "--", *paths)
-        git(root, "commit", "-m", f"egd: lock contract {args.cycle} v{version}")
+        try:
+            git(root, "add", "--", *paths)
+            git(root, "commit", "-m", f"egd: lock contract {args.cycle} v{version}")
+        except EgdError:
+            # Roll back so a failed commit does not leave a half-made lock.
+            git(root, "reset", "-q", "--", *paths, check=False)
+            if prev:
+                write_json(lock_path, prev)
+            else:
+                lock_path.unlink()
+            raise
         git(root, "tag", tag)
         print(f"Committed and tagged {tag}. Push with: git push origin {tag}")
     else:
