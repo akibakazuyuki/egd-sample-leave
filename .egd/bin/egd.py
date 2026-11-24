@@ -378,9 +378,9 @@ def cmd_new(args) -> int:
     d = cycle_dir(root, args.cycle)
     if (d / "contract.yaml").exists():
         raise EgdError(f"cycle {args.cycle} already exists")
-    d.mkdir(parents=True)
     tmpl = TEMPLATES / "contract.yaml"
     text = tmpl.read_text(encoding="utf-8") if tmpl.is_file() else CONTRACT_TEMPLATE
+    d.mkdir(parents=True, exist_ok=True)
     (d / "contract.yaml").write_text(text.replace("C-000", args.cycle), encoding="utf-8")
     write_json(d / "assumptions.json", [])
     (root / cfg["acceptance_dir"] / args.cycle).mkdir(parents=True, exist_ok=True)
