@@ -1,0 +1,33 @@
+{
+  "cycle": "C-001",
+  "version": 1,
+  "locked_at": "2026-11-24T22:56:45+00:00",
+  "files": {
+    ".egd/bin/egd.py": "bd8096c04bb6a288b3b00ad606adaa4625c8ae04e9f987d93a077c51f69007c1",
+    ".egd/config.json": "0a356ab39f829f1fd0059f283d44bf2e944cfcdd6c8da4f013757c2f5171c62d",
+    ".egd/cycles/C-001/contract.yaml": "3bea5735d3b80f246ed69e672a2e5166a180985f59bf25b1fe0143c0bfc199e6",
+    ".egd/project.yaml": "270153587396a5a2f4f0d3848ed27deaca2ea1a8a9ebc172c7d513b5e3c4008a",
+    ".github/workflows/egd-verify.yml": "fe238384165f0b4fafaccab6ad9a148cd1014e5eb91602b331e5c74fb11e4817",
+    "AGENTS.md": "575e775a051453e41128e1528552c68ee51c2cbabf8f1d285a52159dfa7c2dec",
+    "tests/acceptance/C-001/test_c001_apply.py": "c8c775c956ced1d555ac6c77e0987438c2a70f61aa9ffb4cc18c0532d4a76acf"
+  },
+  "examples": [
+    "EX-001",
+    "EX-002",
+    "EX-003",
+    "EX-004",
+    "EX-005",
+    "EX-006",
+    "EX-007",
+    "EX-008",
+    "EX-009",
+    "EX-010",
+    "EX-011"
+  ],
+  "red_check": {
+    "exit_code": 1,
+    "passing_before_impl": [],
+    "not_run": []
+  },
+  "history": []
+}
