@@ -476,21 +476,47 @@ def cmd_lock(args) -> int:
                 lock_path.unlink()
             raise
         git(root, "tag", tag)
-        print(f"Committed and tagged {tag}. Push with: git push origin {tag}")
+        branch = f"{SEAL_BRANCH}/{args.cycle}/v{version}"
+        git(root, "branch", "-f", branch, "HEAD", check=False)
+        print(f"Committed and tagged {tag}. Push with: git push origin {tag}\n"
+              f"If tags cannot be pushed from here, push the seal branch instead: git push origin {branch}")
     else:
         print(f"Sealed {args.cycle} v{version}. Commit it, then: git tag {tag}")
     return 0
 
 
-def latest_tag(root: Path, cycle: str) -> str | None:
-    out = git(root, "tag", "--list", f"egd/{cycle}/v*", check=False)
-    tags = [t.strip() for t in out.splitlines() if t.strip()]
-    def ver(t):
+SEAL_BRANCH = "egd-seal"
+
+
+def seal_refs(root: Path, cycle: str) -> dict:
+    """Seal versions -> git ref. A seal is the tag egd/<ID>/v<N>, or, where tags
+    cannot be pushed (some hosted agents only push branches), the branch
+    egd-seal/<ID>/v<N>. If both exist for a version they must point to the same commit."""
+    refs: dict = {}
+    def ver(name):
         try:
-            return int(t.rsplit("/v", 1)[1])
+            return int(name.rsplit("/v", 1)[1])
         except (IndexError, ValueError):
-            return -1
-    return max(tags, key=ver) if tags else None
+            return None
+    out = git(root, "for-each-ref", "--format=%(refname)",
+              f"refs/tags/egd/{cycle}/", f"refs/heads/{SEAL_BRANCH}/{cycle}/",
+              f"refs/remotes/origin/{SEAL_BRANCH}/{cycle}/", check=False)
+    for full in (l.strip() for l in out.splitlines()):
+        v = ver(full)
+        if v is None:
+            continue
+        short = full.split("/", 2)[2]  # tags/x -> x, heads/x -> x, remotes/origin/x -> origin/x
+        sha = git(root, "rev-parse", f"{full}^{{commit}}").strip()
+        if v in refs and refs[v][1] != sha:
+            raise EgdError(f"seal v{v} of {cycle} points to different commits ({refs[v][0]}, {short})")
+        if v not in refs or full.startswith("refs/tags/"):
+            refs[v] = (short, sha)
+    return {v: r for v, (r, _) in refs.items()}
+
+
+def latest_tag(root: Path, cycle: str) -> str | None:
+    refs = seal_refs(root, cycle)
+    return refs[max(refs)] if refs else None
 
 
 def check_lock(root: Path, cfg: dict, cycle: str, ref: str | None) -> dict:
@@ -626,9 +652,9 @@ def cmd_ci(args) -> int:
     git(root, "fetch", "--tags", "--force", check=False)
     ref = latest_tag(root, cycle)
     if not ref:
-        raise EgdError(f"no seal tag egd/{cycle}/v* found; Gate 1 not completed")
+        raise EgdError(f"no seal (tag egd/{cycle}/v* or branch {SEAL_BRANCH}/{cycle}/v*) found; Gate 1 not completed")
     res = verify(root, cfg, cycle, ref, args.base_sha, restore=True)
-    res["tag_versions"] = [t for t in git(root, "tag", "--list", f"egd/{cycle}/v*").split()]
+    res["tag_versions"] = [r for _, r in sorted(seal_refs(root, cycle).items())]
     out = root / EGD_DIR / "out" / f"{cycle}-verify.json"
     write_json(out, res)
     summary = render_summary(cycle, res)

@@ -3,7 +3,7 @@
 # Runs on pull_request_target, so the workflow definition, egd.py and
 # .egd/config.json come from the BASE branch (main). The implementing agent's
 # branch cannot change how it is judged. Acceptance tests and the contract are
-# restored from the lock tag egd/<ID>/v<N> before running.
+# restored from the seal (tag egd/<ID>/v<N>, or branch egd-seal/<ID>/v<N>) before running.
 #
 # Security: pull_request_target runs the PR's code. This job gets no secrets and
 # read-only permissions. Do not add secrets to this workflow. Only use it on
