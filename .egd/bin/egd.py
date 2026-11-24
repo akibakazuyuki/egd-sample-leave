@@ -457,11 +457,19 @@ def cmd_lock(args) -> int:
     red = None
     if not args.skip_red:
         only = None
+        promoted = []
         if prev and args.relock:
             only = changed_examples(root, args.cycle)
             if only == []:
                 raise EgdError("re-seal has no new or changed examples")
-        ok, red = red_check(root, cfg, args.cycle, only)
+            # An example that writes down an assumption the human approved at Gate 2
+            # is already implemented, so it may pass. It must be linked explicitly.
+            promoted = sorted({e for a in read_json(d / "assumptions.json", [])
+                               if a.get("status") == "approved"
+                               for e in a.get("promoted_to", [])} & set(only or []))
+            only = [i for i in only if i not in promoted] if only is not None else None
+        ok, red = red_check(root, cfg, args.cycle, only) if only != [] else (True, {"checked": []})
+        red["promoted_from_assumptions"] = promoted
         if not ok:
             raise EgdError(f"red check failed: {red}")
     version = (prev["version"] + 1) if prev else 1
