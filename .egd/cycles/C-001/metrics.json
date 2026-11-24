@@ -14,6 +14,15 @@
       "event": "verified",
       "at": "2026-11-24T22:58:12+00:00",
       "ok": true
+    },
+    {
+      "event": "verified",
+      "at": "2026-11-24T22:59:05+00:00",
+      "ok": true
+    },
+    {
+      "event": "report_generated",
+      "at": "2026-11-24T22:59:05+00:00"
     }
   ]
 }

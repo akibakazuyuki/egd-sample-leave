@@ -1,6 +1,6 @@
 {
   "cycle": "C-001",
-  "at": "2026-11-24T22:58:11+00:00",
+  "at": "2026-11-24T22:59:04+00:00",
   "ref": "egd/C-001/v1",
   "lock": {
     "ok": true,
@@ -21,6 +21,7 @@
       ".egd/cycles/C-001/evidence/EX-002_no-balance.png",
       ".egd/cycles/C-001/evidence/EX-010_holiday.png",
       ".egd/cycles/C-001/metrics.json",
+      ".egd/cycles/C-001/verify.json",
       "src/leave/holidays.py",
       "src/leave/service.py",
       "src/leave/web.py",
@@ -50,7 +51,7 @@
   },
   "regression": {
     "exit_code": 0,
-    "total": 8,
+    "total": 9,
     "failed": 0,
     "ok": true
   },
