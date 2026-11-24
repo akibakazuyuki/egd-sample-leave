@@ -446,7 +446,7 @@ def cmd_lock(args) -> int:
     prev = read_json(lock_path, None)
     version = (prev["version"] + 1) if prev else 1
     if prev and not args.relock:
-        raise EgdError("already locked; re-locking needs --relock and must be done by a human")
+        raise EgdError("already sealed; re-sealing needs --reseal and must be done by a human")
     tag = f"egd/{args.cycle}/v{version}"
     if args.git and git(root, "tag", "--list", tag, check=False).strip():
         raise EgdError(f"tag {tag} already exists")
@@ -466,7 +466,7 @@ def cmd_lock(args) -> int:
         paths = [rel(root, lock_path), *files.keys()]
         try:
             git(root, "add", "--", *paths)
-            git(root, "commit", "-m", f"egd: lock contract {args.cycle} v{version}")
+            git(root, "commit", "-m", f"egd: seal acceptance criteria {args.cycle} v{version}")
         except EgdError:
             # Roll back so a failed commit does not leave a half-made lock.
             git(root, "reset", "-q", "--", *paths, check=False)
@@ -478,7 +478,7 @@ def cmd_lock(args) -> int:
         git(root, "tag", tag)
         print(f"Committed and tagged {tag}. Push with: git push origin {tag}")
     else:
-        print(f"Locked {args.cycle} v{version}. Commit it, then: git tag {tag}")
+        print(f"Sealed {args.cycle} v{version}. Commit it, then: git tag {tag}")
     return 0
 
 
@@ -500,7 +500,7 @@ def check_lock(root: Path, cfg: dict, cycle: str, ref: str | None) -> dict:
     else:
         lock = read_json(root / lock_rel, None)
         if lock is None:
-            raise EgdError(f"no lock for cycle {cycle}")
+            raise EgdError(f"no seal for cycle {cycle}")
     changed, missing = [], []
     for path, digest in lock["files"].items():
         p = root / path
@@ -626,7 +626,7 @@ def cmd_ci(args) -> int:
     git(root, "fetch", "--tags", "--force", check=False)
     ref = latest_tag(root, cycle)
     if not ref:
-        raise EgdError(f"no lock tag egd/{cycle}/v* found; Gate 1 not completed")
+        raise EgdError(f"no seal tag egd/{cycle}/v* found; Gate 1 not completed")
     res = verify(root, cfg, cycle, ref, args.base_sha, restore=True)
     res["tag_versions"] = [t for t in git(root, "tag", "--list", f"egd/{cycle}/v*").split()]
     out = root / EGD_DIR / "out" / f"{cycle}-verify.json"
@@ -645,7 +645,7 @@ def render_summary(cycle: str, res: dict) -> str:
     acc = res["acceptance"]["results"]
     passed = sum(1 for v in acc.values() if v == "pass")
     lines = [f"## EGD verify: {cycle} — {'PASS' if res['ok'] else 'FAIL'}", ""]
-    lines.append(f"- Lock {lock.get('ref') or 'working tree'} (v{lock['version']}): "
+    lines.append(f"- Seal {lock.get('ref') or 'working tree'} (v{lock['version']}): "
                  f"{'OK' if lock['ok'] else 'TAMPERED'}")
     for k in ("changed", "missing", "added"):
         if lock.get(k):
@@ -687,10 +687,10 @@ def cmd_report(args) -> int:
     passed = sum(1 for v in acc.values() if v == "pass")
     title = args.title or args.cycle
     head = [f"# {args.cycle} {title} — {'受入判断待ち' if res['ok'] else '検証失敗'}", ""]
-    head.append(f"契約 v{lock.get('version', '?')} · 検証 {res['at']} · "
-                f"ロック照合 {'OK' if res['lock']['ok'] else '不一致'}")
+    head.append(f"受入基準 v{lock.get('version', '?')} · 検証 {res['at']} · "
+                f"シール照合 {'OK' if res['lock']['ok'] else '不一致（改ざんの可能性）'}")
     if lock.get("history"):
-        head.append(f"**注意：Gate 1以降に契約が再ロックされています（v{lock['version']}）。変更内容を確認してください。**")
+        head.append(f"**注意：Gate 1以降に受入基準のシールが貼り直されています（v{lock['version']}）。変更内容を確認してください。**")
     head.append("")
     line = f"具体例 {passed}/{len(acc)} PASS"
     if res.get("regression"):
@@ -731,7 +731,7 @@ def cmd_report(args) -> int:
     ev = metrics.get("events", [])
     impl = _duration(ev, "gate1_locked", "verified")
     if impl is not None:
-        detail.append(f"**所要時間**：ロックから検証まで {impl} 分")
+        detail.append(f"**所要時間**：シールから検証まで {impl} 分")
         detail.append("")
     evidence = d / "evidence"
     if evidence.is_dir():
@@ -794,7 +794,7 @@ def cmd_status(args) -> int:
         dec = read_json(d / "decisions.json", [])
         state = "draft"
         if lock:
-            state = f"locked v{lock['version']}"
+            state = f"sealed v{lock['version']}"
         if ver:
             state += ", verify " + ("PASS" if ver["ok"] else "FAIL")
         if dec:
@@ -815,7 +815,7 @@ GIT_DANGER = [
     (re.compile(r"\bgit\s+tag\s+(-d|-f|--delete|--force)\b"), "tag rewrite"),
     (re.compile(r"\bgit\s+(merge|rebase)\b[^\n;&|]*\bmain\b"), "merge involving main"),
 ]
-RELOCK = re.compile(r"egd(\.py)?\s+lock\b[^\n;&|]*--relock")
+RELOCK = re.compile(r"egd(\.py)?\s+(lock|seal)\b[^\n;&|]*--re(lock|seal)")
 
 
 def guard_decision(root: Path, cfg: dict, payload: dict) -> str | None:
@@ -876,8 +876,8 @@ def cmd_guard(args) -> int:
         with open(log, "a", encoding="utf-8") as f:
             f.write(json.dumps({"at": now(), "tool": payload.get("tool_name"), "reason": reason},
                                ensure_ascii=False) + "\n")
-        print(f"EGD guard: {reason}. Locked acceptance criteria and protected files "
-              f"cannot be changed by the implementing agent. If the contract is wrong, "
+        print(f"EGD guard: {reason}. Sealed acceptance criteria and protected files "
+              f"cannot be changed by the implementing agent. If the acceptance criteria are wrong, "
               f"stop and ask the human (reject type 2 or 4).", file=sys.stderr)
         return 2
     return 0
@@ -906,14 +906,15 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("cycle")
         p.set_defaults(func=func)
 
-    p = sp.add_parser("lock", help="Gate 1: lock the contract")
+    p = sp.add_parser("seal", aliases=["lock"], help="Gate 1: seal the acceptance criteria (alias: lock)")
     p.add_argument("cycle")
     p.add_argument("--git", action="store_true", help="commit and tag")
     p.add_argument("--skip-red", action="store_true")
-    p.add_argument("--relock", action="store_true", help="human only: lock a new version")
+    p.add_argument("--reseal", "--relock", dest="relock", action="store_true",
+                   help="human only: seal a new version")
     p.set_defaults(func=cmd_lock)
 
-    p = sp.add_parser("check-lock")
+    p = sp.add_parser("check-seal", aliases=["check-lock"], help="check the seal (alias: check-lock)")
     p.add_argument("cycle")
     p.add_argument("--ref")
     p.add_argument("--config")

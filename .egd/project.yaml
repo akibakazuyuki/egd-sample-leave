@@ -13,9 +13,9 @@ decision_policy:               # Decision Policy
     - データ削除
     - 権限の緩和、認証・セキュリティ制約の変更
     - 外部仕様（公開API）の変更
-    - 法令・契約に関わる判断
+    - 法令・取引契約に関わる判断
   record_for_gate2:            # Type C：記録してGate 2で必ず確認
-    - 契約に書かれていない業務ルールの判断
+    - 受入基準に書かれていない業務ルールの判断
 
 execution_budget:              # Execution Budget
   max_hours: 4
@@ -25,6 +25,6 @@ acceptance_policy:             # Acceptance Policy
   - 必須の具体例がすべてPASS
   - 不変条件のテストがPASS
   - 回帰テストがPASS
-  - 保護対象とロックの改ざんがない
+  - 保護対象とシールの改ざんがない
   - 未承認のType Dの仮定がない
   - 人間による最終承認（mainへのマージは人間が行う）
