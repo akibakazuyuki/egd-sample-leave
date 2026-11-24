@@ -34,6 +34,26 @@ def find_ex_ids(text: str) -> set:
 CYCLE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
+# Used by `egd new` in projects where only .egd/bin/egd.py is installed.
+CONTRACT_TEMPLATE = """\
+# EGD cycle contract (Example Contract Lite). Human approves this at Gate 1.
+# After `egd lock`, the implementing agent cannot change it.
+id: C-000
+outcome: ここに、この開発で達成する成果を1文で書く
+risk: L2               # L1 低 / L2 通常 / L3 高 / L4 致命的。AIが理由つきで提案する
+risk_reason: ""
+examples:
+  - id: EX-001
+    given: 前提条件
+    when: 操作
+    then: 期待結果
+rules: []              # 具体例で表しきれない業務ルール
+invariants: []         # 常に成り立つ条件（L3以上は必須）
+open_questions: []     # Gate 1で人間が答える。{q, options, recommend, impact}
+overrides: {}          # project.yaml を変えるときだけ書く
+"""
+
+
 class EgdError(Exception):
     pass
 
@@ -359,7 +379,8 @@ def cmd_new(args) -> int:
     if (d / "contract.yaml").exists():
         raise EgdError(f"cycle {args.cycle} already exists")
     d.mkdir(parents=True)
-    text = (TEMPLATES / "contract.yaml").read_text(encoding="utf-8")
+    tmpl = TEMPLATES / "contract.yaml"
+    text = tmpl.read_text(encoding="utf-8") if tmpl.is_file() else CONTRACT_TEMPLATE
     (d / "contract.yaml").write_text(text.replace("C-000", args.cycle), encoding="utf-8")
     write_json(d / "assumptions.json", [])
     (root / cfg["acceptance_dir"] / args.cycle).mkdir(parents=True, exist_ok=True)
