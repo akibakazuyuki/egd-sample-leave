@@ -554,8 +554,13 @@ def cmd_check_lock(args) -> int:
 
 
 def boundary(root: Path, cfg: dict, cycle: str, base: str) -> dict:
-    out = git(root, "diff", "--name-only", f"{base}...HEAD")
-    files = [f for f in out.splitlines() if f.strip()]
+    # With criss-cross history there can be several merge bases. A file counts as
+    # changed by this branch only if it differs from every one of them.
+    bases = git(root, "merge-base", "--all", base, "HEAD").split() or [base]
+    files = None
+    for b in bases:
+        names = [f for f in git(root, "diff", "--name-only", b, "HEAD").splitlines() if f.strip()]
+        files = names if files is None else [f for f in files if f in set(names)]
     cdir = f"{EGD_DIR}/cycles/{cycle}/"
     allowed_meta = {cdir + "assumptions.json", cdir + "metrics.json", cdir + "report.md",
                     cdir + "decisions.json", cdir + "verify.json"}
